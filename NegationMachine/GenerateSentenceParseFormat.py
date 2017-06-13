@@ -33,7 +33,7 @@ def parse(nlp, sentence):
 
 
 nlp = StanfordNLP()
-parse(nlp, "i never thought it was good , but i've never tried")
+parse(nlp, "i'm not happy or sad")
 """
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()

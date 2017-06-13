@@ -20,6 +20,7 @@ class Node:
 		self.effective_valence = -999 #processed valence value used to add up sentiment
 
 		self.isNegated = False #used to flag the use of the negation fn
+
 class Sentence:
 	def __init__(self, string):
 		self.word_nodes_list = [] #the sentence in a list of nodes (words only!)
@@ -87,6 +88,7 @@ class Sentence:
 
 			except ValueError:
 				break
+
 class SentimentAnalyzer:
 	def __init__(self):
 		self.sentences = []
@@ -95,40 +97,54 @@ class SentimentAnalyzer:
 		self.neg_method = ""
 		self.avg_method = ""
 
+		self.sentences_parsed_strings = []
+
 
 	def init(self, sentences_parsed_string, NSD_method = "parse_tree", neg_method = "invert", avg_method = "parse_tree"):
 		self.NSD_method = NSD_method
 		self.neg_method = neg_method
 		self.avg_method = avg_method
-		for sentence in sentences_parsed_string:
-			new_sentence = Sentence(sentence)
+		self.sentences_parsed_strings = sentences_parsed_string
+
+	def run(self):
+		total = len(self.sentences_parsed_strings)
+
+		for i in range(total):
+			new_sentence = Sentence(self.sentences_parsed_strings[i])
 			new_sentence.generateTreeStructure()
 			self.sentences.append(new_sentence)
 
-	def run(self):
-		for s in self.sentences:
-
 			#[DIMENSION 1]negation scope detection method
-			idNegationScope(s, self.NSD_method)
+			idNegationScope(new_sentence, self.NSD_method)
 
 			#[DIMENSION 2]negation method
-			process_negation(s, self.neg_method)
+			process_negation(new_sentence, self.neg_method)
 
 			#[DIMENSION 3]averaging method
 			if(self.avg_method == "parse_tree"):
-				parsed_average(s, self.neg_method)
-				s.sentiment = s.root.effective_valence
+				parsed_average(new_sentence, self.neg_method)
+				new_sentence.sentiment = new_sentence.root.effective_valence
 			elif(self.avg_method == "flat"):
-				s.sentiment = flat_average(s)
+				new_sentence.sentiment = flat_average(s)
+
+			#traverse_tree(new_sentence)
+			print "[{}/{}] sentence: '{}' [{}]".format(i, total, new_sentence.sentence, new_sentence.sentiment)
 
 if __name__ == '__main__':
-	sentences = ["(ROOT (FRAG (S (S (NP (LS i)) (ADVP (RB never)) (VP (VBD thought) (SBAR (S (NP (PRP it)) (VP (VBD was) (ADJP (JJ good))))))) (, ,) (CC but) (S (NP (FW i)) (VP (VBP 've) (ADVP (RB never)) (VP (VBN tried)))))))","(ROOT (FRAG (S (S (NP (DT this)) (VP (VBZ is) (RB n't) (ADJP (JJ great)))) (, ,) (CC but) (S (NP (PRP it)) (VP (VBZ is) (RB n't) (ADJP (JJ terrible)))))))","(ROOT (FRAG (S (S (NP (DT this)) (VP (VBZ is) (RB not) (ADJP (JJ great)))) (, ,) (CC but) (S (NP (PRP it)) (VP (VBZ is) (RB not) (ADJP (JJ bad)))))))","(ROOT (FRAG (S (S (NP (DT this)) (VP (VBZ is) (RB not) (ADJP (JJ bad)))) (, ,) (CC but) (S (NP (FW i)) (VP (VBP do) (RB not) (VP (VB prefer) (NP (PRP it))))))))","(ROOT (FRAG (S (S (NP (DT this)) (VP (VBZ is) (RB not) (ADJP (RB too) (JJ terrible)))) (, ,) (CC but) (S (NP (FW i)) (VP (VBP do) (RB not) (VP (VB like) (NP (PRP it))))))))","(ROOT (S (S (NP (DT this)) (VP (VBZ is) (ADJP (RB absolutely) (JJ terrible)))) (, ,) (CC and) (S (NP (FW i)) (VP (VBP do) (RB not) (VP (VB like) (SBAR (WHADVP (WRB how)) (S (NP (PRP it)) (VP (VBZ 's) (ADVP (RB so))))))))))"]
+	#sentences = ["(ROOT (FRAG (S (S (NP (LS i)) (ADVP (RB never)) (VP (VBD thought) (SBAR (S (NP (PRP it)) (VP (VBD was) (ADJP (JJ good))))))) (, ,) (CC but) (S (NP (FW i)) (VP (VBP 've) (ADVP (RB never)) (VP (VBN tried)))))))","(ROOT (FRAG (S (S (NP (DT this)) (VP (VBZ is) (RB n't) (ADJP (JJ great)))) (, ,) (CC but) (S (NP (PRP it)) (VP (VBZ is) (RB n't) (ADJP (JJ terrible)))))))","(ROOT (FRAG (S (S (NP (DT this)) (VP (VBZ is) (RB not) (ADJP (JJ great)))) (, ,) (CC but) (S (NP (PRP it)) (VP (VBZ is) (RB not) (ADJP (JJ bad)))))))","(ROOT (FRAG (S (S (NP (DT this)) (VP (VBZ is) (RB not) (ADJP (JJ bad)))) (, ,) (CC but) (S (NP (FW i)) (VP (VBP do) (RB not) (VP (VB prefer) (NP (PRP it))))))))","(ROOT (FRAG (S (S (NP (DT this)) (VP (VBZ is) (RB not) (ADJP (RB too) (JJ terrible)))) (, ,) (CC but) (S (NP (FW i)) (VP (VBP do) (RB not) (VP (VB like) (NP (PRP it))))))))","(ROOT (S (S (NP (DT this)) (VP (VBZ is) (ADJP (RB absolutely) (JJ terrible)))) (, ,) (CC and) (S (NP (FW i)) (VP (VBP do) (RB not) (VP (VB like) (SBAR (WHADVP (WRB how)) (S (NP (PRP it)) (VP (VBZ 's) (ADVP (RB so))))))))))"]
+	#sentences =[ "(ROOT (S (NP (PRP it)) (VP (VBZ 's) (ADJP (JJ great)))))", "(ROOT (S (NP (PRP it)) (VP (VBZ 's) (RB not) (ADJP (JJ great)))))"]
+	sentences = ["(ROOT (S (NP (LS i)) (VP (VBP 'm) (RB not) (ADJP (JJ happy) (CC or) (JJ sad)))))"]
+	"""
+	sentences = []
+	f = open('amazon_parsed_sentence_file.txt', 'rb')
+	reviews = f.readlines()
+	for r in reviews:
+		sentences.append(r.strip("\n"))
+	"""
 	analyzer = SentimentAnalyzer()
 	analyzer.init(sentences, NSD_method = "parse_tree", neg_method = "shift_asym", avg_method = "parse_tree")
 	analyzer.run()
-	for sentence in analyzer.sentences:
-		#traverse_tree(sentence)
-		print"sentence: '{}' [{}]".format(sentence.sentence, sentence.sentiment)
+	
 
 """
 **WHATS UP WITH ADVP???? ('NEVER')
@@ -139,5 +155,8 @@ sentence: 'this is n't great , but it is n't terrible ' [-0.675]
 sentence: 'this is not great , but it is not bad ' [-0.5325]
 sentence: 'this is not bad , but i do not prefer it ' [-0.15625]
 sentence: 'this is not too terrible , but i do not like it ' [-0.4125]
-sentence: 'this is absolutely terrible , and i do not like how it 's so ' [-1.5]
+sentence: 'this is absolutely terrible , and i do not like how it 's so' [-1.5]
+
+
+sentence: 'i 'm not happy or sad ' [-0.79625] (shift then add) vs. [-0.1425] (add then shift)
 """
