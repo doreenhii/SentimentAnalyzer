@@ -1,3 +1,5 @@
+import os,csv
+
 def get_sentiment(word):
 	#**find lexicon/dictionary
 	"""
@@ -9,7 +11,12 @@ def get_sentiment(word):
 	                   })
 	return int(res["sentences"][0]["sentimentValue"])
 	"""
-	return 1.0
+	f = open(os.getcwd()+'/Dataset/Affective-Ratings/BRM-emot-submit.csv', 'rb')
+	reader = csv.reader(f)
+	for row in reader:
+		if(row[1] == word.lower()):
+			return (float(row[2]) - 5.0)
+	return -999
 
 
 def isNegation(word):
