@@ -1,6 +1,7 @@
 """
 LAUNCH CORENLP SERVER: 
-cd /Users/alanyuen/Desktop/SA/SA/stanford-corenlp-python/
+cd /Users/alanyuen/Desktop/untitled\ folder/SA/stanford-corenlp-python 
+
 python corenlp.py 
 
 
@@ -32,7 +33,7 @@ def parse(nlp, sentence):
 
 
 nlp = StanfordNLP()
-parse(nlp, "this is not great, but it is not bad")
+parse(nlp, "i never thought it was good , but i've never tried")
 """
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()

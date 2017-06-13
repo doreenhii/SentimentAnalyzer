@@ -1,9 +1,8 @@
-
 from pycorenlp import StanfordCoreNLP
 from negation_functions import *
 from negation_scope_detection import *
+from averaging_functions import *
 from lexicons import *
-
 
 #can be either word or phrase
 #can have structural capabilities (tree)
@@ -121,95 +120,24 @@ class SentimentAnalyzer:
 				s.sentiment = s.root.effective_valence
 			elif(self.avg_method == "flat"):
 				s.sentiment = flat_average(s)
-				
-
-
-def idNegationScope(sentence, NSD_method):
-	if(NSD_method == "parse_tree"):
-		#parsed neg scope
-		traverse_tree(sentence,fn = "NEG_SCOPE")
-
-	elif(NSD_method == "neg_nn"):
-		pass
-	elif(NSD_method == "neg_tool"):
-		pass
-
-def process_negation(sentence, neg_method):
-	for word in sentence.word_nodes_list:
-		if(word.isNegated and word.base_valence != -999):
-			word.effective_valence = negate(word.base_valence, neg_method)
-		else:
-			word.effective_valence = word.base_valence
-
-def parsed_average(sentence, neg_method, node = None):	
-	if(node == None):
-		node = sentence.root
-
-	scores = []
-	for c in node.children:
-
-		if(c.effective_valence == -999):#if c has not been reached yet
-			if(len(c.children) > 0):
-				#recursion on children
-				parsed_average(sentence, neg_method, node = c)
-		#print"NODE: POS:{} WORD:{} SCORE:{}".format(c.POS_tag, c.word, c.aggregate_value)
-
-		#0 here has to mean does not have valence.. if 0 here means neutral, it needs to be part of the scores
-		if(c.effective_valence != -999):
-			scores.append(c.effective_valence)
-		
-	if(len(scores) > 0):
-		node.effective_valence = sum(scores)/float(len(scores)) #average of children
-
-def flat_average(sentence):
-		total_score = 0
-		counter = 0
-		for word in sentence.word_nodes_list:
-			if(word.effective_valence != -999):
-				total_score += word.effective_valence
-				counter += 1
-		total_score /= float(counter)
-		return total_score
-
-def traverse_tree(sentence, node = None, fn = "PRINT"):
-	if(node == None):
-		node = sentence.root
-
-	if(fn == "PRINT"):
-		children_string = "["
-		for c in node.children:
-			children_string += " **POS:[\""+str(c.POS_tag)+"\"] Word:[\""+str(c.word)+"\"]** "
-		#print main details of node
-		print"\nNODE: POS_Tag:[{}] Word:[{}] EffectiveV:[{}] BaseV:[{}]".format(node.POS_tag, node.word, node.effective_valence, node.base_valence)
-		#print parent node
-		if(node.parent):
-			print("\tParent: [" + node.parent.POS_tag + "]")
-		#print children node(s)
-		print("\tChildren:" + children_string + "]")
-
-	elif(fn == "NEG_SCOPE"):
-		#if current node word is a negation word, negate all consecutive siblings
-		if(isNegation(node.word)):
-			index = node.parent.children.index(node)
-			if(index + 1 < len(node.parent.children)):
-				for sibling in node.parent.children[index+1:]:
-					neg_subtree(sibling)
-					#sibling.isNegated = not node.isNegated
-
-	#traverse children
-	for c in node.children:
-		traverse_tree(sentence, c, fn)
-
-def neg_subtree(node):
-	node.isNegated = not node.isNegated
-	if(len(node.children) > 0):
-		for c in node.children:
-			neg_subtree(c)
 
 if __name__ == '__main__':
-	sentences = ["(ROOT (FRAG (S (S (NP (DT this)) (VP (VBZ is) (RB not) (ADJP (JJ great)))) (, ,) (CC but) (S (NP (PRP it)) (VP (VBZ is) (RB not) (ADJP (JJ bad)))))))","(ROOT (FRAG (S (S (NP (DT this)) (VP (VBZ is) (RB not) (ADJP (JJ bad)))) (, ,) (CC but) (S (NP (FW i)) (VP (VBP do) (RB not) (VP (VB prefer) (NP (PRP it))))))))","(ROOT (FRAG (S (S (NP (DT this)) (VP (VBZ is) (RB not) (ADJP (RB too) (JJ terrible)))) (, ,) (CC but) (S (NP (FW i)) (VP (VBP do) (RB not) (VP (VB like) (NP (PRP it))))))))","(ROOT (S (S (NP (DT this)) (VP (VBZ is) (ADJP (RB absolutely) (JJ terrible)))) (, ,) (CC and) (S (NP (FW i)) (VP (VBP do) (RB not) (VP (VB like) (SBAR (WHADVP (WRB how)) (S (NP (PRP it)) (VP (VBZ 's) (ADVP (RB so))))))))))"]
+	sentences = ["(ROOT (FRAG (S (S (NP (LS i)) (ADVP (RB never)) (VP (VBD thought) (SBAR (S (NP (PRP it)) (VP (VBD was) (ADJP (JJ good))))))) (, ,) (CC but) (S (NP (FW i)) (VP (VBP 've) (ADVP (RB never)) (VP (VBN tried)))))))","(ROOT (FRAG (S (S (NP (DT this)) (VP (VBZ is) (RB n't) (ADJP (JJ great)))) (, ,) (CC but) (S (NP (PRP it)) (VP (VBZ is) (RB n't) (ADJP (JJ terrible)))))))","(ROOT (FRAG (S (S (NP (DT this)) (VP (VBZ is) (RB not) (ADJP (JJ great)))) (, ,) (CC but) (S (NP (PRP it)) (VP (VBZ is) (RB not) (ADJP (JJ bad)))))))","(ROOT (FRAG (S (S (NP (DT this)) (VP (VBZ is) (RB not) (ADJP (JJ bad)))) (, ,) (CC but) (S (NP (FW i)) (VP (VBP do) (RB not) (VP (VB prefer) (NP (PRP it))))))))","(ROOT (FRAG (S (S (NP (DT this)) (VP (VBZ is) (RB not) (ADJP (RB too) (JJ terrible)))) (, ,) (CC but) (S (NP (FW i)) (VP (VBP do) (RB not) (VP (VB like) (NP (PRP it))))))))","(ROOT (S (S (NP (DT this)) (VP (VBZ is) (ADJP (RB absolutely) (JJ terrible)))) (, ,) (CC and) (S (NP (FW i)) (VP (VBP do) (RB not) (VP (VB like) (SBAR (WHADVP (WRB how)) (S (NP (PRP it)) (VP (VBZ 's) (ADVP (RB so))))))))))"]
 	analyzer = SentimentAnalyzer()
-	analyzer.init(sentences, avg_method = "parse_tree")
+	analyzer.init(sentences, NSD_method = "parse_tree", neg_method = "shift_asym", avg_method = "parse_tree")
 	analyzer.run()
 	for sentence in analyzer.sentences:
+		#traverse_tree(sentence)
 		print"sentence: '{}' [{}]".format(sentence.sentence, sentence.sentiment)
+
+"""
+**WHATS UP WITH ADVP???? ('NEVER')
+
+NSD_method = "parse_tree" neg_method = "shift_asym", avg_method = "parse_tree"
+sentence: 'i never thought it was good , but i 've never tried ' [-0.58125]
+sentence: 'this is n't great , but it is n't terrible ' [-0.675]
+sentence: 'this is not great , but it is not bad ' [-0.5325]
+sentence: 'this is not bad , but i do not prefer it ' [-0.15625]
+sentence: 'this is not too terrible , but i do not like it ' [-0.4125]
+sentence: 'this is absolutely terrible , and i do not like how it 's so ' [-1.5]
+"""

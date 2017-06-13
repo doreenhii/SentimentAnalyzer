@@ -1,3 +1,10 @@
+def process_negation(sentence, neg_method):
+	for word in sentence.word_nodes_list:
+		if(word.isNegated and word.base_valence != -999):
+			word.effective_valence = negate(word.base_valence, neg_method)
+		else:
+			word.effective_valence = word.base_valence
+
 def negate(score, method):
 	if(method == "invert"):
 		return invert(score)
@@ -22,11 +29,9 @@ def shift_sym(score):
 	return score
 	
 def shift_asym(score):
-	shift_val = 0.5
-
 	if(score < 0):
-		score += shift_val * 0.5
+		score -= score * 0.75
 	else:
-		score -= shift_val
+		score -= score * 1.25
 
 	return score
