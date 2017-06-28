@@ -3,6 +3,7 @@ from negation_functions import *
 from negation_scope_detection import *
 from averaging_functions import *
 from lexicons import *
+from GenerateSentenceParseFormat import *
 
 #can be either word or phrase
 #can have structural capabilities (tree)
@@ -15,11 +16,11 @@ class Node:
 		self.word = ""
 		self.node_type = "" #"word" or "phrase"
 
-
-		self.base_valence = 0 # [-5,5] from dataset **ONLY WORDS ** -1 if no valence found
+		self.base_valence = -999 # [-5,5] from dataset **ONLY WORDS ** -1 if no valence found
 		self.effective_valence = -999 #processed valence value used to add up sentiment
 
 		self.isNegated = False #used to flag the use of the negation fn
+		self.mod_value = 1.0
 
 class Sentence:
 	def __init__(self, string):
@@ -74,6 +75,8 @@ class Sentence:
 						self.sentence += word + " "
 						#where you define the sentiment value of the individual word
 						new_node.base_valence = get_sentiment(word)
+						if(new_node.base_valence != -999):
+							print("{} - {}".format(new_node.word,new_node.base_valence))
 
 						#storing the word nodes in an accessible list
 						self.word_nodes_list.append(new_node)
@@ -99,7 +102,6 @@ class SentimentAnalyzer:
 
 		self.sentences_parsed_strings = []
 
-
 	def init(self, sentences_parsed_string, NSD_method = "parse_tree", neg_method = "invert", avg_method = "parse_tree"):
 		self.NSD_method = NSD_method
 		self.neg_method = neg_method
@@ -117,46 +119,48 @@ class SentimentAnalyzer:
 			#[DIMENSION 1]negation scope detection method
 			idNegationScope(new_sentence, self.NSD_method)
 
-			#[DIMENSION 2]negation method
-			process_negation(new_sentence, self.neg_method)
-
 			#[DIMENSION 3]averaging method
 			if(self.avg_method == "parse_tree"):
-				parsed_average(new_sentence, self.neg_method)
+				parsed_average_bottom_up(new_sentence, self.neg_method)
 				new_sentence.sentiment = new_sentence.root.effective_valence
 			elif(self.avg_method == "flat"):
+				#[DIMENSION 2]negation method
+				process_negation(new_sentence, self.neg_method)
 				new_sentence.sentiment = flat_average(s)
-
-			#traverse_tree(new_sentence)
+				#traverse_tree(new_sentence)
 			print "[{}/{}] sentence: '{}' [{}]".format(i, total, new_sentence.sentence, new_sentence.sentiment)
 
 if __name__ == '__main__':
 	#sentences = ["(ROOT (FRAG (S (S (NP (LS i)) (ADVP (RB never)) (VP (VBD thought) (SBAR (S (NP (PRP it)) (VP (VBD was) (ADJP (JJ good))))))) (, ,) (CC but) (S (NP (FW i)) (VP (VBP 've) (ADVP (RB never)) (VP (VBN tried)))))))","(ROOT (FRAG (S (S (NP (DT this)) (VP (VBZ is) (RB n't) (ADJP (JJ great)))) (, ,) (CC but) (S (NP (PRP it)) (VP (VBZ is) (RB n't) (ADJP (JJ terrible)))))))","(ROOT (FRAG (S (S (NP (DT this)) (VP (VBZ is) (RB not) (ADJP (JJ great)))) (, ,) (CC but) (S (NP (PRP it)) (VP (VBZ is) (RB not) (ADJP (JJ bad)))))))","(ROOT (FRAG (S (S (NP (DT this)) (VP (VBZ is) (RB not) (ADJP (JJ bad)))) (, ,) (CC but) (S (NP (FW i)) (VP (VBP do) (RB not) (VP (VB prefer) (NP (PRP it))))))))","(ROOT (FRAG (S (S (NP (DT this)) (VP (VBZ is) (RB not) (ADJP (RB too) (JJ terrible)))) (, ,) (CC but) (S (NP (FW i)) (VP (VBP do) (RB not) (VP (VB like) (NP (PRP it))))))))","(ROOT (S (S (NP (DT this)) (VP (VBZ is) (ADJP (RB absolutely) (JJ terrible)))) (, ,) (CC and) (S (NP (FW i)) (VP (VBP do) (RB not) (VP (VB like) (SBAR (WHADVP (WRB how)) (S (NP (PRP it)) (VP (VBZ 's) (ADVP (RB so))))))))))"]
 	#sentences =[ "(ROOT (S (NP (PRP it)) (VP (VBZ 's) (ADJP (JJ great)))))", "(ROOT (S (NP (PRP it)) (VP (VBZ 's) (RB not) (ADJP (JJ great)))))"]
-	sentences = ["(ROOT (S (NP (LS i)) (VP (VBP 'm) (RB not) (ADJP (JJ happy) (CC or) (JJ sad)))))"]
-	"""
+	#sentences = ["(ROOT (S (NP (PRP I)) (VP (VBP do) (RB not) (VP (VB agree) (PP (IN on) (NP (DT the) (NN issue)))))))"]
+	
+	raw_sentences = ["I'm hardly barely happy", "i am really really happy", "i am really happy", "i am not really happy", "i am really not happy"]
+	
 	sentences = []
+
+	"""
+	
 	f = open('amazon_parsed_sentence_file.txt', 'rb')
 	reviews = f.readlines()
 	for r in reviews:
 		sentences.append(r.strip("\n"))
 	"""
+
+	nlp = StanfordNLP()
+	for raw_sentence in raw_sentences:
+		sentences.append(parse(nlp, raw_sentence))
+
 	analyzer = SentimentAnalyzer()
 	analyzer.init(sentences, NSD_method = "parse_tree", neg_method = "shift_asym", avg_method = "parse_tree")
 	analyzer.run()
 	
-
 """
-**WHATS UP WITH ADVP???? ('NEVER')
+THINGS TO TELL LISA:
 
-NSD_method = "parse_tree" neg_method = "shift_asym", avg_method = "parse_tree"
-sentence: 'i never thought it was good , but i 've never tried ' [-0.58125]
-sentence: 'this is n't great , but it is n't terrible ' [-0.675]
-sentence: 'this is not great , but it is not bad ' [-0.5325]
-sentence: 'this is not bad , but i do not prefer it ' [-0.15625]
-sentence: 'this is not too terrible , but i do not like it ' [-0.4125]
-sentence: 'this is absolutely terrible , and i do not like how it 's so' [-1.5]
+	happy - 0.8675
+	[1/3] sentence: 'i am not really happy ' [-0.390375]
+	happy - 0.8675
+	[2/3] sentence: 'i am really not happy ' [-0.390375]
 
-
-sentence: 'i 'm not happy or sad ' [-0.79625] (shift then add) vs. [-0.1425] (add then shift)
-"""
+	"""

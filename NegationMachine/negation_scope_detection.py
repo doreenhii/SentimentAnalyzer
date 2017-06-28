@@ -1,8 +1,10 @@
+from lexicons import *
+
 def idNegationScope(sentence, NSD_method):
 	if(NSD_method == "parse_tree"):
 		#parsed neg scope
 		traverse_tree(sentence,fn = "NEG_SCOPE")
-
+		traverse_tree(sentence,fn = "MOD_SCOPE")
 	elif(NSD_method == "neg_nn"):
 		pass
 	elif(NSD_method == "neg_tool"):
@@ -34,9 +36,33 @@ def traverse_tree(sentence, node = None, fn = "PRINT"):
 			index = negate_node.parent.children.index(negate_node)
 			if(index + 1 < len(negate_node.parent.children)):
 				for sibling in negate_node.parent.children[index+1:]:
-					neg_subtree(sibling)
-					#sibling.isNegated = not node.isNegated
+					sibling.isNegated = not sibling.isNegated
 
+	elif(fn == "MOD_SCOPE"):
+		#if current node word is a negation word, negate all consecutive siblings
+		mod_value = get_modifier_value(node.word)
+		if(mod_value != 1.0):
+			if(node.parent.POS_tag == "ADVP"):
+				mod_node = node.parent
+			else:
+				mod_node = node
+			mod_value = get_modifier_value(node.word)
+			index = mod_node.parent.children.index(mod_node)
+			if(index + 1 < len(mod_node.parent.children)):
+				for sibling in mod_node.parent.children[index+1:]:
+					sibling.mod_value = mod_value
+
+	elif(fn == "NEG_SCOPE_WORDS"):
+		#if current node word is a negation word, negate all consecutive siblings
+		if(isNegation(node.word)):
+			if(node.parent.POS_tag == "ADVP"):
+				negate_node = node.parent
+			else:
+				negate_node = node
+			index = negate_node.parent.children.index(negate_node)
+			if(index + 1 < len(negate_node.parent.children)):
+				for sibling in negate_node.parent.children[index+1:]:
+					neg_subtree(sibling)
 	#traverse children
 	for c in node.children:
 		traverse_tree(sentence, c, fn)

@@ -29,9 +29,12 @@ def shift_sym(score):
 	return score
 	
 def shift_asym(score):
+
 	if(score < 0):
-		score -= score * 0.75
+		score = score/4.0
+		#score += 1.5
 	else:
-		score -= score * 1.25
+		score = -score/4.0
+		#score -= 2.5
 
 	return score

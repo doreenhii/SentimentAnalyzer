@@ -29,11 +29,11 @@ def parse(nlp, sentence):
 	result = nlp.parse(sentence)
 	for i in range(len(result['sentences'])):
 		line = result['sentences'][i]['parsetree']
-		print(line)
+		return line
 
 
 nlp = StanfordNLP()
-parse(nlp, "i'm not happy or sad")
+print(parse(nlp, "never, never, never buy this as it is not really good"))
 """
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
